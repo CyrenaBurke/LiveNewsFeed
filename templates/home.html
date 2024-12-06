@@ -231,4 +231,58 @@ Recommended For You
     });
 </script>
 
+<script>
+    window.addEventListener('DOMContentLoaded', () => {
+        // Initial contextual data without location or time
+        const contextualData = {
+            theme: localStorage.getItem('theme') || 'light',
+            viewport: {
+                width: window.innerWidth,
+                height: window.innerHeight
+            },
+            reading_mode: 'focus'
+        };
+
+        // Capture current time of access as an ISO string
+        contextualData.time_of_access = new Date().toISOString();
+
+        // Function to send data to the server
+        function sendContextualData() {
+            fetch('/store_context', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contextual_data: contextualData })
+            })
+            .then(response => response.json())
+            .then(data => console.log('Context stored:', data))
+            .catch(err => console.error('Error storing context:', err));
+        }
+
+        // Attempt to get user location
+        if ('geolocation' in navigator) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    // On success, add location data
+                    contextualData.location = {
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude
+                    };
+                    // Now send data after we have location
+                    sendContextualData();
+                },
+                (error) => {
+                    console.warn('Could not get location:', error);
+                    // Even if location is not available, send what we have
+                    sendContextualData();
+                }
+            );
+        } else {
+            console.warn('Geolocation not supported by this browser.');
+            // Send data without location
+            sendContextualData();
+        }
+    });
+</script>
+
+
 {% endblock %}
