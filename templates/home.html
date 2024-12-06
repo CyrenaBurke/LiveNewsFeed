@@ -9,6 +9,45 @@
             Welcome back, {{ session['username'] }}!
         </h3>
     {% endif %}
+
+    <!-- Recommended Articles Section -->
+<h2 class="mb-4 text-center font-weight-bold" 
+style="font-family: 'Roboto', sans-serif; font-size: 2rem; margin-top: 50px;">
+Recommended For You
+</h2>
+
+{% if recommendations and recommendations|length > 0 %}
+<div id="recommendations-feed" class="row row-cols-1 row-cols-md-3 g-4">
+{% for article in recommendations %}
+<div class="col">
+    <div class="card shadow-lg border-light rounded h-100" style="border-radius: 15px; overflow: hidden;">
+        <img src="{{ article.urlToImage }}" class="card-img-top" alt="{{ article.title }}" style="height: 200px; object-fit: cover;">
+        <div class="card-body d-flex flex-column">
+            <h5 class="card-title font-weight-bold text-dark">{{ article.title }}</h5>
+            <p class="card-text text-muted flex-grow-1"
+               style="display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">
+                {% if article.description %}
+                    {{ article.description[:150] }}
+                    {% if article.description|length > 150 %}...{% endif %}
+                {% endif %}
+            </p>
+            <div class="card-footer d-flex justify-content-between align-items-center">
+                <button class="btn btn-outline-primary like-btn" data-url="{{ article.url }}" data-liked="{{ article.liked }}">
+                    {{ 'Unlike' if article.liked else 'Like' }}
+                </button>
+                <span class="text-muted like-count">{{ article.likes }} {{ 'like' if article.likes == 1 else 'likes' }}</span>
+            </div>
+            
+            <a href="{{ article.url }}" target="_blank" class="btn btn-primary mt-auto w-100 read-more" data-url="{{ article.url }}">Read More</a>
+        </div>
+    </div>
+</div>
+{% endfor %}
+</div>
+{% else %}
+<p class="text-center text-muted">No personalized recommendations available at the moment.</p>
+{% endif %}
+
     
     <!-- Top News Title -->
     <h2 class="mb-4 text-center font-weight-bold display-1" 

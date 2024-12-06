@@ -56,16 +56,20 @@ def home():
         username = session['username']
         news = fetch_news()  # Top headlines
         recommendations = recommend_articles(username)  # Personalized recommendations
-        
-        # Add like status and like count to articles
+
+        # Add like status and like count for the main news articles
         for article in news:
             article['liked'] = username in article.get('liked_by', [])
             article['likes'] = len(article.get('liked_by', []))
-        
+
+        # Add like status and like count for the recommended articles
+        for rec_article in recommendations:
+            rec_article['liked'] = username in rec_article.get('liked_by', [])
+            rec_article['likes'] = len(rec_article.get('liked_by', []))
+
         return render_template('home.html', username=username, news=news, recommendations=recommendations)
     else:
         return redirect(url_for('login'))
-
 
 
 @app.route('/logout')
