@@ -191,6 +191,37 @@ def like_article():
 
     return jsonify({'liked': new_liked_status, 'likes': like_count})
 
+@app.route('/store_context', methods=['POST'])
+def store_context():
+    if 'username' not in session:
+        return jsonify({'error': 'Not logged in'}), 403
+
+    username = session['username']
+    user = mongo.db.users.find_one({'username': username})
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+
+    user_id = user['_id']
+    data = request.json.get('contextual_data', {})
+
+    # data may contain 'location' and 'time_of_access' now
+    # Example structure:
+    # {
+    #   "theme": "dark",
+    #   "viewport": {"width": 1920, "height": 1080},
+    #   "reading_mode": "focus",
+    #   "location": { "latitude": <lat>, "longitude": <lng> },
+    #   "time_of_access": "2024-12-06T12:34:56.789Z"
+    # }
+
+    mongo.db.contextual_data.update_one(
+        {'user_id': user_id},
+        {'$set': {'context': data}},
+        upsert=True
+    )
+
+    return jsonify({'success': True})
+
 
 # Function to fetch news from NewsAPI and store in MongoDB if not already stored
 def fetch_news():
@@ -331,6 +362,9 @@ def categorize_article(article):
 scheduler = BackgroundScheduler()
 scheduler.add_job(func=fetch_and_store_news, trigger="interval", minutes=1)
 scheduler.start()
+
+if __name__ == '__main__':
+    socket.run(app, debug=False, use_reloader=False)
 
 if __name__ == '__main__':
     socket.run(app, debug=False, use_reloader=False)
