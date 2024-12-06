@@ -174,4 +174,61 @@ Recommended For You
     attachLikeButtonListeners();
 </script>
 
+<script>
+    let startTime = null;
+    let currentArticleUrl = null;
+    let trackInterval = null;
+    const TRACKING_INTERVAL = 30000; // 30 seconds
+
+    // When user clicks "Read More"
+    document.querySelectorAll('.read-more').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            currentArticleUrl = e.currentTarget.getAttribute('data-url');
+            startTime = Date.now();
+
+            // If we are already tracking, clear old interval
+            if (trackInterval) {
+                clearInterval(trackInterval);
+            }
+
+            // Start sending increments every 30s
+            trackInterval = setInterval(() => {
+                const elapsedTime = Math.floor((Date.now() - startTime) / 1000);
+                if (elapsedTime > 0 && currentArticleUrl) {
+                    // Send a 30-second increment
+                    fetch('/track_time', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ url: currentArticleUrl, time_spent: 30 })
+                    }).catch(err => console.error(err));
+
+                    // Reset startTime after sending increment
+                    startTime = Date.now();
+                }
+            }, TRACKING_INTERVAL);
+
+            // Open the article in a new tab:
+            window.open(currentArticleUrl, '_blank');
+        });
+    });
+
+    // Attempt a final update if the user navigates away
+    window.addEventListener('unload', () => {
+        if (trackInterval) {
+            clearInterval(trackInterval);
+        }
+        if (startTime && currentArticleUrl) {
+            const elapsedTime = Math.floor((Date.now() - startTime) / 1000);
+            if (elapsedTime > 0) {
+                fetch('/track_time', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: currentArticleUrl, time_spent: elapsedTime })
+                }).catch(err => console.error(err));
+            }
+        }
+    });
+</script>
+
 {% endblock %}
