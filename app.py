@@ -54,15 +54,14 @@ def login():
 def home():
     if 'username' in session:
         username = session['username']
-        news = fetch_news()  # Top headlines
-        recommendations = recommend_articles(username)  # Personalized recommendations
+        news = fetch_news()
+        recommendations = recommend_articles(username)
 
-        # Add like status and like count for the main news articles
+        # Add like status and like count to news and recommendations as before
         for article in news:
             article['liked'] = username in article.get('liked_by', [])
             article['likes'] = len(article.get('liked_by', []))
 
-        # Add like status and like count for the recommended articles
         for rec_article in recommendations:
             rec_article['liked'] = username in rec_article.get('liked_by', [])
             rec_article['likes'] = len(rec_article.get('liked_by', []))
@@ -107,19 +106,24 @@ def track_time():
         return jsonify({'error': 'Not logged in'}), 403
 
     username = session['username']
+    user = mongo.db.users.find_one({'username': username})
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+
     data = request.json
     article_url = data.get('url')
-    time_spent = data.get('time_spent', 0)
+    increment_time = data.get('time_spent', 0)
 
-    if not article_url or time_spent <= 0:
+    if not article_url or increment_time <= 0:
         return jsonify({'error': 'Invalid input'}), 400
 
-    # Update the article's behavior tracking for the user
+    # Increment the user's time spent on this article, keyed by their username
     mongo.db.articles.update_one(
         {'url': article_url},
-        {'$inc': {f'behavior_tracking.{username}.time_spent': time_spent}}
+        {'$inc': {f'time_spent.{username}': increment_time}}
     )
-    return jsonify({'success': True, 'time_spent': time_spent})
+
+    return jsonify({'success': True, 'time_spent_increment': increment_time})
 
 
 @app.route('/like', methods=['POST'])
@@ -129,116 +133,168 @@ def like_article():
 
     username = session['username']
     article_url = request.json.get('url')
-
     if not article_url:
         return jsonify({'error': 'Invalid article URL'}), 400
 
-    # Find the article by URL
-    article = mongo.db.articles.find_one({'url': article_url})
+    # Find the user document
+    user = mongo.db.users.find_one({'username': username})
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    user_id = user['_id']
+
+    # Find the article document by URL
+    article = mongo.db.articles.find_one({'url': article_url}, {'_id': 1, 'liked_by': 1})
     if not article:
         return jsonify({'error': 'Article not found'}), 404
+    article_id = article['_id']
 
-    # Check if the user already liked the article
-    liked = False
-    if username in article.get('liked_by', []):
-        # User has already liked the article, so we un-like it
+    # Determine if user already liked the article
+    liked = username in article.get('liked_by', [])
+
+    if liked:
+        # User is currently liking the article, so we "unlike" it
         mongo.db.articles.update_one(
-            {'url': article_url},
-            {'$pull': {'liked_by': username}}  # Remove user from liked_by list
+            {'_id': article_id},
+            {'$pull': {'liked_by': username}}
         )
-        liked = False
+        new_liked_status = False
     else:
         # User hasn't liked the article yet, so we like it
         mongo.db.articles.update_one(
-            {'url': article_url},
-            {'$addToSet': {'liked_by': username}}  # Add user to liked_by list
+            {'_id': article_id},
+            {'$addToSet': {'liked_by': username}}
         )
-        liked = True
+        new_liked_status = True
 
-        # Update user_behavior collection to track the like
-        mongo.db.user_behavior.update_one(
-            {'url': article_url},
-            {
-                '$setOnInsert': {'url': article_url},  # Insert the article if not already present
-                '$set': {f'user_.{username}.liked': liked},  # Set the like status for this user
+    # Update user_behavior for this user and article
+    mongo.db.user_behavior.update_one(
+        {'article_id': article_id, 'user_id': user_id},
+        {
+            '$setOnInsert': {
+                'article_id': article_id,
+                'user_id': user_id
             },
-            upsert=True
-        )
+            '$set': {'liked': new_liked_status}
+        },
+        upsert=True
+    )
 
-    # Get the updated article and count the likes
-    updated_article = mongo.db.articles.find_one({'url': article_url})
+    # Re-fetch the updated article to get the new like count
+    updated_article = mongo.db.articles.find_one({'_id': article_id}, {'liked_by': 1})
     like_count = len(updated_article.get('liked_by', []))
 
     # Update the `likes` count in the article
     mongo.db.articles.update_one(
-        {'url': article_url},
-        {'$set': {'likes': like_count}}  # Update the likes field with the current count
+        {'_id': article_id},
+        {'$set': {'likes': like_count}}
     )
 
-    return jsonify({'liked': liked, 'likes': like_count})
+    return jsonify({'liked': new_liked_status, 'likes': like_count})
 
 
 # Function to fetch news from NewsAPI and store in MongoDB if not already stored
 def fetch_news():
     params = {
-    'apiKey': NEWS_API_KEY,
-    'q': 'technology', 
-    'pageSize': 20,
-    'sortBy': 'publishedAt'
-}
+        'apiKey': NEWS_API_KEY,
+        'q': 'news',
+        'pageSize': 20,
+        'sortBy': 'publishedAt',
+        'language': 'en',
+        'domains': 'bbc.co.uk,cnn.com,wired.com,nytimes.com'
+    }
 
-    response = requests.get(NEWS_API_URL, params=params)
+    response = requests.get('https://newsapi.org/v2/everything', params=params)
     print("NewsAPI status code:", response.status_code)
-    print("NewsAPI response JSON:", response.json())  # Print the entire JSON
-    
+    data = response.json()
+    print("NewsAPI response JSON:", data)
+
     if response.status_code != 200:
         print(f"Error fetching news: {response.status_code}")
         return []
 
-    articles = response.json().get('articles', [])
+    articles = data.get('articles', [])
     print("Number of articles received:", len(articles))
 
     for article in articles:
         print("Article URL:", article.get('url'))
-        article['category'] = categorize_article(article)
-        article['liked_by'] = []
-        article['likes'] = 0
-        article['time_spent'] = {}
-        # Use $set so existing documents update, and new ones insert
+        category = categorize_article(article)
+
+        # Fields from the API only (no user interaction fields set here)
+        api_fields = {
+            'title': article.get('title'),
+            'description': article.get('description'),
+            'urlToImage': article.get('urlToImage'),
+            'publishedAt': article.get('publishedAt'),
+            'content': article.get('content'),
+            'category': category
+        }
+
+        # Use $set for API fields
+        # Use $setOnInsert to only initialize interaction fields once
         mongo.db.articles.update_one(
             {'url': article['url']},
-            {'$set': article},
+            {
+                '$set': api_fields,
+                '$setOnInsert': {
+                    'liked_by': [],
+                    'likes': 0,
+                    'time_spent': {}
+                }
+            },
             upsert=True
         )
+
     return list(mongo.db.articles.find())
 
 
 def get_user_preferences(username):
-    user_behavior = mongo.db.user_behavior.find({'user_': {'$exists': True}})
+    user = mongo.db.users.find_one({'username': username})
+    if not user:
+        return []
+    
+    # Find all articles that have time spent recorded for this user
+    # We query for articles where `time_spent.username` exists.
+    # Replace `username` with the actual username field logic if needed.
+    query = {f"time_spent.{username}": {"$exists": True}}
+    user_articles = mongo.db.articles.find(query)
+
     category_scores = {}
-    for behavior in user_behavior:
-        user_data = behavior['user_'].get(username, {})
-        time_spent = user_data.get('time_spent', 0)
-        # Extract article categories and score
-        article = mongo.db.articles.find_one({'url': behavior['url']})
-        if article and 'category' in article:
+    for article in user_articles:
+        if 'category' in article and article['category']:
+            # Extract the time spent by this user
+            user_time = article['time_spent'].get(username, 0)
+            # Accumulate time spent per category
             category = article['category']
-            category_scores[category] = category_scores.get(category, 0) + time_spent
-    # Sort by highest preference
+            category_scores[category] = category_scores.get(category, 0) + user_time
+
+    # Sort categories by total time spent, descending
     sorted_preferences = sorted(category_scores.items(), key=lambda x: x[1], reverse=True)
+    # Extract just the category names
     return [category for category, score in sorted_preferences]
+
 
 
 def recommend_articles(username):
     preferences = get_user_preferences(username)
+
+    user = mongo.db.users.find_one({'username': username})
+    if not user:
+        return []
+
+    user_id = user['_id']
+    # If you're still using `user_behavior` or `liked_by` arrays to exclude already-interacted articles,
+    # fetch the set of interacted_article_ids or URLs as before.
+    # For example:
+    interacted_article_ids = [doc['article_id'] for doc in mongo.db.user_behavior.find({'user_id': user_id})]
+
     recommendations = []
     for category in preferences:
-        # Find articles matching the user's preferences
         articles = mongo.db.articles.find({
             'category': category,
-            'url': {'$nin': [doc['url'] for doc in mongo.db.user_behavior.find({'user_': {username: {'$exists': True}}})]}
-        }).limit(5)  # Limit recommendations to avoid overload
+            '_id': {'$nin': interacted_article_ids}
+        }).limit(5)
         recommendations.extend(list(articles))
+
     return recommendations
 
 # Function to fetch and store new news, then emit the update to SocketIO
