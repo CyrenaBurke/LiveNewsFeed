@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}Home - LiveNewsFeed{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    {% if 'username' in session %}
+        <h3 class="text-center" style="font-size: 2rem; color: #2c3892; font-family: 'Poppins', sans-serif;">
+            Welcome back, {{ session['username'] }}!
+        </h3>
+    {% endif %}
+    
+    <!-- Top News Title -->
+    <h2 class="mb-4 text-center font-weight-bold display-1" 
+        style="font-family: 'Roboto', sans-serif; font-size: 4rem; font-weight: 700; 
+               background: linear-gradient(to right, #2c3892, #2c3892); 
+               -webkit-background-clip: text; 
+               -moz-background-clip: text;
+               background-clip: text; 
+               color: transparent; 
+               padding-top: 30px; 
+               transition: all 0.3s ease-in-out;">
+        Top News
+    </h2>
+    
+    {% if news %}
+    <div id="news-feed" class="row row-cols-1 row-cols-md-3 g-4">
+        {% for article in news %}
+        <div class="col">
+            <div class="card shadow-lg border-light rounded h-100" style="border-radius: 15px; overflow: hidden;">
+                <img src="{{ article.urlToImage }}" class="card-img-top" alt="{{ article.title }}" style="height: 200px; object-fit: cover;">
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title font-weight-bold text-dark">{{ article.title }}</h5>
+                    <p class="card-text text-muted flex-grow-1" style="display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">
+                        {% if article.description %}
+                            {{ article.description[:150] }}
+                            {% if article.description|length > 150 %}...{% endif %}
+                        {% endif %}
+                    </p>
+                    <div class="card-footer d-flex justify-content-between align-items-center">
+                        <button class="btn btn-outline-primary like-btn" data-url="{{ article.url }}" data-liked="{{ article.liked }}">
+                            {{ 'Unlike' if article.liked else 'Like' }}
+                        </button>
+                        <span class="text-muted like-count">{{ article.likes }} {{ 'like' if article.likes == 1 else 'likes' }}</span>
+                    </div>
+                    
+                    <a href="{{ article.url }}" target="_blank" class="btn btn-primary mt-auto w-100 read-more" data-url="{{ article.url }}">Read More</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-center text-muted">No news articles available at the moment.</p>
+    {% endif %}
+</div>
+
+<!-- Include the Socket.IO client-side script -->
+<script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+<script>
+    // Connect to the Flask app via Socket.IO
+    const socket = io();  
+
+    // Listen for new news feed updates from the server
+    socket.on('news_feed_update', (data) => {
+        const newsFeedContainer = document.getElementById('news-feed');
+        const newArticles = data.articles;
+
+        // Clear existing articles
+        newsFeedContainer.innerHTML = '';
+
+        // Add new articles to the feed
+        newArticles.forEach(article => {
+            const articleHTML = `
+                <div class="col">
+                    <div class="card shadow-lg border-light rounded h-100" style="border-radius: 15px; overflow: hidden;">
+                        <img src="${article.urlToImage}" class="card-img-top" alt="${article.title}" style="height: 200px; object-fit: cover;">
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title font-weight-bold text-dark">${article.title}</h5>
+                            <p class="card-text text-muted flex-grow-1" style="display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">
+                                ${article.description ? article.description.slice(0, 150) + '...' : ''}
+                            </p>
+                            <div class="card-footer d-flex justify-content-between align-items-center">
+                                <button class="btn btn-outline-primary like-btn" data-url="${article.url}" data-liked="${article.liked}">
+                                    ${article.liked ? 'Unlike' : 'Like'}
+                                </button>
+                                <span class="text-muted like-count">${article.likes} ${article.likes === 1 ? 'like' : 'likes'}</span>
+                            </div>
+                            
+                            <a href="${article.url}" target="_blank" class="btn btn-primary mt-auto w-100 read-more" data-url="${article.url}">Read More</a>
+                        </div>
+                    </div>
+                </div>
+            `;
+            newsFeedContainer.insertAdjacentHTML('beforeend', articleHTML);
+        });
+
+        // Reattach event listeners for like buttons
+        attachLikeButtonListeners();
+    });
+
+    // Function to attach event listeners to like buttons
+    function attachLikeButtonListeners() {
+        document.querySelectorAll('.like-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const articleUrl = this.getAttribute('data-url');
+                const liked = this.getAttribute('data-liked') === 'true'; // Determine if the user has already liked it
+
+                // Send request to the server to like/unlike the article
+                fetch('/like', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ url: articleUrl })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Update button text based on the response
+                    this.textContent = data.liked ? 'Unlike' : 'Like';
+                    this.setAttribute('data-liked', data.liked);
+
+                    // Update the like count
+                    const likeCountElement = this.parentElement.querySelector('.like-count');
+                    likeCountElement.textContent = `${data.likes} ${data.likes === 1 ? 'like' : 'likes'}`;
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            });
+        });
+    }
+
+    // Attach initial like button listeners when page loads
+    attachLikeButtonListeners();
+</script>
+
+{% endblock %}

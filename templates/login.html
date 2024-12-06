@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Login to LiveNewsFeed{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card shadow-sm border-0">
+                <div class="card-header text-center bg-gradient-primary text-white py-4" style="border-top-left-radius: 0.5rem; border-top-right-radius: 0.5rem;">
+                    <h3 class="mb-0">Welcome Back</h3>
+                    <p class="small mb-0">Login to your account</p>
+                </div>
+                <div class="card-body py-5 px-4">
+                    <form action="{{ url_for('login') }}" method="POST">
+                        <!-- Username input -->
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control" id="username" name="username" placeholder="Username" required>
+                            <label for="username">Username</label>
+                        </div>
+
+                        <!-- Password input -->
+                        <div class="form-floating mb-4">
+                            <input type="password" class="form-control" id="password" name="password" placeholder="Password" required>
+                            <label for="password">Password</label>
+                        </div>
+
+                        <!-- Submit button -->
+                        <div class="d-grid mb-3">
+                            <button type="submit" class="btn btn-primary btn-lg">Sign In</button>
+                        </div>
+
+                        <!-- Forgot password link -->
+                        <div class="text-center">
+                            <a href="#" class="text-decoration-none small text-muted">Forgot your password?</a>
+                        </div>
+                    </form>
+
+                    <!-- Show error message if any -->
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <div class="alert alert-danger mt-3">
+                            {% for category, message in messages %}
+                                <p>{{ message }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    {% endwith %}
+                </div>
+
+                <!-- Sign up link -->
+                <div class="card-footer text-center py-3 bg-light">
+                    <p class="mb-0">Don't have an account? <a href="{{ url_for('register') }}" class="text-primary">Sign Up</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    body {
+        background: linear-gradient(135deg, #e0eafc, #cfdef3); /* Light gradient background */
+    }
+
+    .bg-gradient-primary {
+        background: linear-gradient(90deg, #4a66b5, #6a84d3);
+    }
+
+    .btn-primary {
+        background-color: #4a66b5;
+        border-color: #4a66b5;
+    }
+
+    .btn-primary:hover {
+        background-color: #6a84d3;
+        border-color: #6a84d3;
+    }
+
+    .card {
+        border-radius: 0.5rem;
+        overflow: hidden;
+    }
+
+    .form-floating>.form-control {
+        border-radius: 0.5rem;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Create Account{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card shadow-sm border-0">
+                <div class="card-header text-center bg-gradient-primary text-white py-4" style="border-top-left-radius: 0.5rem; border-top-right-radius: 0.5rem;">
+                    <h3 class="mb-0">Create Your Account</h3>
+                    <p class="small mb-0">Join LiveNewsFeed today</p>
+                </div>
+                <div class="card-body py-5 px-4">
+                    <form action="{{ url_for('register') }}" method="POST">
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control" id="username" name="username" placeholder="Choose a username" required>
+                            <label for="username">Username</label>
+                        </div>
+                        <div class="form-floating mb-3">
+                            <input type="password" class="form-control" id="password" name="password" placeholder="Create a password" required>
+                            <label for="password">Password</label>
+                        </div>
+                        <div class="form-floating mb-4">
+                            <input type="password" class="form-control" id="confirmPassword" name="confirmPassword" placeholder="Confirm your password" required>
+                            <label for="confirmPassword">Confirm Password</label>
+                        </div>
+                        <div class="form-check mb-4">
+                            <input type="checkbox" class="form-check-input" id="termsCheck" required>
+                            <label class="form-check-label" for="termsCheck">I agree to the <a href="#" class="text-primary">terms and conditions</a></label>
+                        </div>
+                        <div class="d-grid mb-3">
+                            <button type="submit" class="btn btn-primary btn-lg">Sign Up</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="card-footer text-center py-3 bg-light">
+                    <p class="mb-0">Already have an account? <a href="{{ url_for('login') }}" class="text-primary">Login here</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    body {
+        background: linear-gradient(135deg, #e0eafc, #cfdef3); /* Light gradient background */
+    }
+
+    .bg-gradient-primary {
+        background: linear-gradient(90deg, #4a66b5, #6a84d3);
+    }
+
+    .btn-primary {
+        background-color: #4a66b5;
+        border-color: #4a66b5;
+    }
+
+    .btn-primary:hover {
+        background-color: #6a84d3;
+        border-color: #6a84d3;
+    }
+
+    .card {
+        border-radius: 0.5rem;
+        overflow: hidden;
+    }
+
+    .form-floating>.form-control {
+        border-radius: 0.5rem;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <!-- Include Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600&display=swap" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}LiveNewsFeed{% endblock %}</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Navbar Styling */
+        .navbar {
+            background-color: #fafaff !important; /* Light background color */
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+            padding: 12px 30px; /* Increased padding for a spacious feel */
+            font-family: 'Poppins', sans-serif; /* Modern, clean font */
+            border-bottom: 2px solid #e0e0e0; /* Soft bottom border for separation */
+        }
+
+        .navbar .navbar-brand {
+            color: #2c3892 !important; /* Dark text color */
+            font-family: 'Montserrat', sans-serif; /* Bold, modern font for brand */
+            font-weight: 600; /* Bold weight for brand */
+            transition: color 0.3s ease; /* Smooth color transition */
+        }
+
+        .navbar .navbar-brand:hover {
+            color: #007bff !important; /* Highlight color for hover effect */
+        }
+
+        .navbar .nav-link {
+            color: #2c3892 !important; /* Text color */
+            font-size: 1rem; /* Medium font size for better readability */
+            padding: 10px 15px; /* Spacing around each link */
+            transition: color 0.3s ease, transform 0.3s ease; /* Smooth color and transform transitions */
+        }
+
+        .navbar .nav-link:hover {
+            color: #007bff !important; /* Active hover color */
+            transform: translateY(-3px); /* Slight movement for hover effect */
+        }
+
+        .navbar .nav-link.active {
+            color: #007bff !important; /* Active link color */
+            font-weight: 600; /* Bold active link */
+        }
+
+        .navbar-nav .nav-item {
+            margin-right: 20px; /* Increased spacing between nav items */
+        }
+
+        /* Footer Styling */
+        .footer-container {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background-color: #fafaff;
+            z-index: 1000;
+            color: #2c3892;
+            text-align: center;
+            padding: 9px;
+            box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.1); /* Subtle shadow for footer */
+        }
+
+        /* Scroll-to-Top Button */
+        #scrollToTopBtn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background-color: rgba(0, 123, 255, 0.7); /* Semi-transparent blue background */
+            color: white;
+            border: none;
+            border-radius: 0; /* Square button */
+            font-size: 24px;
+            width: 50px;
+            height: 50px;
+            display: none; /* Hidden by default */
+            cursor: pointer;
+            z-index: 1000;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); /* Shadow for button */
+            transition: background-color 0.3s ease, transform 0.3s ease;
+        }
+
+        #scrollToTopBtn:hover {
+            background-color: rgba(0, 86, 179, 0.7); /* Darker shade of blue on hover */
+            transform: scale(1.1); /* Hover effect to enlarge the button */
+        }
+
+        #scrollToTopBtn:focus {
+            outline: none; /* Remove focus outline */
+        }
+
+        #scrollToTopBtn i {
+            font-size: 20px;
+        }
+
+        /* Smooth Scroll Effect */
+        html {
+            scroll-behavior: smooth;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg">
+        <div class="container-fluid">
+            <!-- Logo with link to landing page -->
+            <a class="navbar-brand" href="{{ url_for('landing') }}">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" width="40"> LiveNewsFeed
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('landing') }}">LNF</a>
+                    </li>
+                    {% if 'username' in session %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('home') }}">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+                    </li>
+                    {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('login') }}">Sign In</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('register') }}">Create Account</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mt-5">
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- Footer -->
+    <div class="footer-container">
+        <p>&copy; 2024 LiveNewsFeed Ltd. All Rights Reserved.</p>
+    </div>
+
+    <!-- Scroll-to-Top Button -->
+    <button id="scrollToTopBtn" onclick="scrollToTop()">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Show "Scroll to Top" button when scrolling down
+        window.onscroll = function () {
+            let scrollBtn = document.getElementById("scrollToTopBtn");
+            if (document.body.scrollTop > 100 || document.documentElement.scrollTop > 100) {
+                scrollBtn.style.display = "block";
+            } else {
+                scrollBtn.style.display = "none";
+            }
+        };
+
+        // Scroll to top function
+        function scrollToTop() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,125 @@
+/* Custom styles for Landing Page */
+.content-section {
+    padding-top: 60px;
+    padding-bottom: 60px;
+}
+
+.company-info-section {
+    background-color: #f8f9fa; /* Light background for this section */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+}
+
+.news-networks-section {
+    background-color: #e9ecef;
+}
+
+.mission-vision-section h3 {
+    font-size: 2rem;
+    color: #343a40;
+}
+
+.mission-vision-section p {
+    font-size: 1.1rem;
+    color: #6c757d;
+}
+
+.bg-light {
+    background-color: #f8f9fa!important;
+}
+
+/* Smooth Hover Effects on Images */
+.img-fluid:hover {
+    transform: scale(1.05);
+    transition: transform 0.3s ease-in-out;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .company-info-section {
+        text-align: center;
+    }
+
+    .mission-vision-section h3 {
+        font-size: 1.5rem;
+    }
+
+    .mission-vision-section p {
+        font-size: 1rem;
+    }
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);  /* Subtle hover effect */
+}
+h2:hover {
+    transform: scale(1.05);
+    transition: transform 0.3s ease-in-out;
+}
+.card {
+    display: flex;
+    flex-direction: column; /* Arrange content vertically */
+    height: 100%; /* Ensure all cards have the same height */
+}
+
+.card-img-top {
+    height: 200px; /* Consistent image height */
+    object-fit: cover; /* Maintain image aspect ratio */
+}
+
+.card-body {
+    flex-grow: 1; /* Allow content to stretch evenly */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between; /* Ensure spacing for the "Read More" button */
+}
+
+.card-title {
+    font-size: 1.2rem;
+    margin-bottom: 10px; /* Consistent spacing */
+}
+
+.card-text {
+    flex-grow: 1; /* Ensure the text takes available space */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 3; /* Limit to 3 lines of text */
+    -webkit-box-orient: vertical;
+}
+
+.card-footer {
+    margin-top: auto; /* Push the button to the bottom */
+}
+
+
+.card-img-top {
+    height: 200px; /* Fixed image height */
+    object-fit: cover; /* Maintain aspect ratio */
+}
+
+.btn {
+    margin-top: auto; /* Push button to the bottom of the card */
+}
+
+.card.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+.container {
+    padding-bottom: 80px; /* Extra space to account for the footer */
+}
+
+.footer-container {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    height: 50px; /* Set an explicit height for the footer */
+    background-color: #fafaff;
+    z-index: 1000;
+    color: #2c3892;
+    text-align: center;
+    padding: 9px 0;
+    box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.1);
+}

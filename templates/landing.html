@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+
+{% block title %}Landing Page{% endblock %}
+
+{% block content %}
+<!-- Company Information Section -->
+<section class="content-section company-info-section py-5">
+    <div class="container text-center">
+        <h1 class="display-4 font-weight-bold mb-3">Build Your Custom News Feed</h1>
+        <p class="lead mb-4">
+            Welcome to LiveNewsFeed – Your Trusted Source for Real-Time News.
+        </p>
+        <p class="text-muted">
+            At LiveNewsFeed, we believe in the power of information. In today’s fast-paced world, staying updated with the latest news is more important than ever. That’s why we provide a cutting-edge, live news feed that delivers real-time updates from the most trusted sources across the globe.
+        </p>
+    </div>
+</section>
+
+<!-- News Networks Section -->
+<section class="content-section news-networks-section py-5 bg-light">
+    <div class="container text-center">
+        <h2 class="display-4 mb-3">Get news from your favorite websites</h2>
+        <p class="lead mb-4">
+            Never miss out on a news story from your favorite publications.
+        </p>
+        <img src="{{ url_for('static', filename='images/newsicons.png') }}" alt="News Icons" class="img-fluid rounded shadow-lg">
+    </div>
+</section>
+
+<!-- Our Mission and Vision Section -->
+<section class="content-section mission-vision-section py-5">
+    <div class="container">
+        <div class="row">
+            <!-- Mission Column -->
+            <div class="col-md-6 mb-4 mb-md-0">
+                <h3 class="display-5 font-weight-bold mb-3" style="color: #000000;">Our Mission</h3>
+                <p class="lead text-muted">
+                    Our mission is simple: to keep you informed, wherever you are. From breaking news to in-depth analysis, our custom live news feed ensures you're always connected to the stories that matter most. We deliver a custom news feed with up-to-the-minute updates. We source the latest news from a wide variety of media outlets, ensuring you're always ahead of the curve. Customize your news feed based on your interests – be it world affairs, tech, finance, sports, or entertainment.
+                </p>
+            </div>
+
+            <!-- Vision Column -->
+            <div class="col-md-6">
+                <h3 class="display-5 font-weight-bold mb-3" style="color: #000000;">Our Vision</h3>
+                <p class="lead text-muted">
+                    We envision a world where everyone has access to real-time, relevant news that empowers them to make informed decisions. With our innovative technology, we’re committed to breaking down barriers and delivering timely news with clarity and precision.
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Add extra space between content and footer -->
+<style>
+    /* Extra space between content and footer */
+    .content-section {
+        margin-bottom: 20px; /* Adjust as needed for more space */
+    }
+</style>
+
+{% endblock %}
