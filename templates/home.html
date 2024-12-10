@@ -10,46 +10,57 @@
         </h3>
     {% endif %}
 
-    <!-- Recommended Articles Section -->
-<h2 class="mb-4 text-center font-weight-bold" 
-style="font-family: 'Roboto', sans-serif; font-size: 2rem; margin-top: 50px;">
-Recommended For You
-</h2>
-
-{% if recommendations and recommendations|length > 0 %}
-<div id="recommendations-feed" class="row row-cols-1 row-cols-md-3 g-4">
-{% for article in recommendations %}
-<div class="col">
-    <div class="card shadow-lg border-light rounded h-100" style="border-radius: 15px; overflow: hidden;">
-        <img src="{{ article.urlToImage }}" class="card-img-top" alt="{{ article.title }}" style="height: 200px; object-fit: cover;">
-        <div class="card-body d-flex flex-column">
-            <h5 class="card-title font-weight-bold text-dark">{{ article.title }}</h5>
-            <p class="card-text text-muted flex-grow-1"
-               style="display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">
-                {% if article.description %}
-                    {{ article.description[:150] }}
-                    {% if article.description|length > 150 %}...{% endif %}
-                {% endif %}
-            </p>
-            <div class="card-footer d-flex justify-content-between align-items-center">
-                <button class="btn btn-outline-primary like-btn" data-url="{{ article.url }}" data-liked="{{ article.liked }}">
-                    {{ 'Unlike' if article.liked else 'Like' }}
-                </button>
-                <span class="text-muted like-count">{{ article.likes }} {{ 'like' if article.likes == 1 else 'likes' }}</span>
-            </div>
-            
-            <a href="{{ article.url }}" target="_blank" class="btn btn-primary mt-auto w-100 read-more" data-url="{{ article.url }}">Read More</a>
-        </div>
+    <!-- Semantic Search Section -->
+    <div class="search-section my-4">
+        <h2 class="text-center mb-3" style="font-family: 'Roboto', sans-serif; font-size: 1.5rem;">
+            Search Articles
+        </h2>
+        <form id="search-form" class="d-flex justify-content-center">
+            <input type="text" id="query" placeholder="Search articles..." class="form-control w-50 me-2" required>
+            <button type="submit" class="btn btn-primary">Search</button>
+        </form>
+        <div id="search-results" class="mt-4 row row-cols-1 row-cols-md-3 g-4"></div>
     </div>
-</div>
-{% endfor %}
-</div>
-{% else %}
-<p class="text-center text-muted">No personalized recommendations available at the moment.</p>
-{% endif %}
 
-    
-    <!-- Top News Title -->
+    <!-- Recommended Articles Section -->
+    <h2 class="mb-4 text-center font-weight-bold" 
+        style="font-family: 'Roboto', sans-serif; font-size: 2rem; margin-top: 50px;">
+        Recommended For You
+    </h2>
+
+    {% if recommendations and recommendations|length > 0 %}
+    <div id="recommendations-feed" class="row row-cols-1 row-cols-md-3 g-4">
+        {% for article in recommendations %}
+        <div class="col">
+            <div class="card shadow-lg border-light rounded h-100" style="border-radius: 15px; overflow: hidden;">
+                <img src="{{ article.urlToImage }}" class="card-img-top" alt="{{ article.title }}" style="height: 200px; object-fit: cover;">
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title font-weight-bold text-dark">{{ article.title }}</h5>
+                    <p class="card-text text-muted flex-grow-1"
+                       style="display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">
+                        {% if article.description %}
+                            {{ article.description[:150] }}
+                            {% if article.description|length > 150 %}...{% endif %}
+                        {% endif %}
+                    </p>
+                    <div class="card-footer d-flex justify-content-between align-items-center">
+                        <button class="btn btn-outline-primary like-btn" data-url="{{ article.url }}" data-liked="{{ article.liked }}">
+                            {{ 'Unlike' if article.liked else 'Like' }}
+                        </button>
+                        <span class="text-muted like-count">{{ article.likes }} {{ 'like' if article.likes == 1 else 'likes' }}</span>
+                    </div>
+                    
+                    <a href="{{ article.url }}" target="_blank" class="btn btn-primary mt-auto w-100 read-more" data-url="{{ article.url }}">Read More</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-center text-muted">No personalized recommendations available at the moment.</p>
+    {% endif %}
+
+    <!-- Top News Section -->
     <h2 class="mb-4 text-center font-weight-bold display-1" 
         style="font-family: 'Roboto', sans-serif; font-size: 4rem; font-weight: 700; 
                background: linear-gradient(to right, #2c3892, #2c3892); 
@@ -94,195 +105,69 @@ Recommended For You
     {% endif %}
 </div>
 
-<!-- Include the Socket.IO client-side script -->
-<script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+<!-- JavaScript Section -->
 <script>
-    // Connect to the Flask app via Socket.IO
-    const socket = io();  
-
-    // Listen for new news feed updates from the server
-    socket.on('news_feed_update', (data) => {
-        const newsFeedContainer = document.getElementById('news-feed');
-        const newArticles = data.articles;
-
-        // Clear existing articles
-        newsFeedContainer.innerHTML = '';
-
-        // Add new articles to the feed
-        newArticles.forEach(article => {
-            const articleHTML = `
-                <div class="col">
-                    <div class="card shadow-lg border-light rounded h-100" style="border-radius: 15px; overflow: hidden;">
-                        <img src="${article.urlToImage}" class="card-img-top" alt="${article.title}" style="height: 200px; object-fit: cover;">
-                        <div class="card-body d-flex flex-column">
-                            <h5 class="card-title font-weight-bold text-dark">${article.title}</h5>
-                            <p class="card-text text-muted flex-grow-1" style="display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">
-                                ${article.description ? article.description.slice(0, 150) + '...' : ''}
-                            </p>
-                            <div class="card-footer d-flex justify-content-between align-items-center">
-                                <button class="btn btn-outline-primary like-btn" data-url="${article.url}" data-liked="${article.liked}">
-                                    ${article.liked ? 'Unlike' : 'Like'}
-                                </button>
-                                <span class="text-muted like-count">${article.likes} ${article.likes === 1 ? 'like' : 'likes'}</span>
-                            </div>
-                            
-                            <a href="${article.url}" target="_blank" class="btn btn-primary mt-auto w-100 read-more" data-url="${article.url}">Read More</a>
-                        </div>
-                    </div>
-                </div>
-            `;
-            newsFeedContainer.insertAdjacentHTML('beforeend', articleHTML);
-        });
-
-        // Reattach event listeners for like buttons
-        attachLikeButtonListeners();
-    });
-
-    // Function to attach event listeners to like buttons
-    function attachLikeButtonListeners() {
+    // Handle article likes
+    function attachLikeListeners() {
         document.querySelectorAll('.like-btn').forEach(button => {
-            button.addEventListener('click', function() {
+            button.addEventListener('click', function () {
                 const articleUrl = this.getAttribute('data-url');
-                const liked = this.getAttribute('data-liked') === 'true'; // Determine if the user has already liked it
+                const liked = this.getAttribute('data-liked') === 'true';
 
-                // Send request to the server to like/unlike the article
                 fetch('/like', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ url: articleUrl })
                 })
                 .then(response => response.json())
                 .then(data => {
-                    // Update button text based on the response
                     this.textContent = data.liked ? 'Unlike' : 'Like';
                     this.setAttribute('data-liked', data.liked);
-
-                    // Update the like count
                     const likeCountElement = this.parentElement.querySelector('.like-count');
                     likeCountElement.textContent = `${data.likes} ${data.likes === 1 ? 'like' : 'likes'}`;
                 })
-                .catch(error => {
-                    console.error('Error:', error);
-                });
+                .catch(err => console.error('Error liking article:', err));
             });
         });
     }
 
-    // Attach initial like button listeners when page loads
-    attachLikeButtonListeners();
-</script>
+    attachLikeListeners();
 
-<script>
-    let startTime = null;
-    let currentArticleUrl = null;
-    let trackInterval = null;
-    const TRACKING_INTERVAL = 30000; // 30 seconds
+    // Semantic search
+    document.getElementById('search-form').addEventListener('submit', function (e) {
+        e.preventDefault();
+        const query = document.getElementById('query').value;
 
-    // When user clicks "Read More"
-    document.querySelectorAll('.read-more').forEach(link => {
-        link.addEventListener('click', (e) => {
-            e.preventDefault();
-            currentArticleUrl = e.currentTarget.getAttribute('data-url');
-            startTime = Date.now();
+        fetch('/search', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query })
+        })
+        .then(response => response.json())
+        .then(data => {
+            const resultsContainer = document.getElementById('search-results');
+            resultsContainer.innerHTML = '';
 
-            // If we are already tracking, clear old interval
-            if (trackInterval) {
-                clearInterval(trackInterval);
+            if (data.results.length === 0) {
+                resultsContainer.innerHTML = '<p class="text-center text-muted">No results found.</p>';
+            } else {
+                data.results.forEach(article => {
+                    const articleHTML = `
+                        <div class="col">
+                            <div class="card shadow-lg border-light rounded h-100">
+                                <img src="${article.urlToImage}" class="card-img-top" alt="${article.title}">
+                                <div class="card-body">
+                                    <h5 class="card-title">${article.title}</h5>
+                                    <p class="card-text">${article.description ? article.description.slice(0, 150) + '...' : ''}</p>
+                                    <a href="${article.url}" target="_blank" class="btn btn-primary">Read More</a>
+                                </div>
+                            </div>
+                        </div>`;
+                    resultsContainer.insertAdjacentHTML('beforeend', articleHTML);
+                });
             }
-
-            // Start sending increments every 30s
-            trackInterval = setInterval(() => {
-                const elapsedTime = Math.floor((Date.now() - startTime) / 1000);
-                if (elapsedTime > 0 && currentArticleUrl) {
-                    // Send a 30-second increment
-                    fetch('/track_time', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ url: currentArticleUrl, time_spent: 30 })
-                    }).catch(err => console.error(err));
-
-                    // Reset startTime after sending increment
-                    startTime = Date.now();
-                }
-            }, TRACKING_INTERVAL);
-
-            // Open the article in a new tab:
-            window.open(currentArticleUrl, '_blank');
-        });
-    });
-
-    // Attempt a final update if the user navigates away
-    window.addEventListener('unload', () => {
-        if (trackInterval) {
-            clearInterval(trackInterval);
-        }
-        if (startTime && currentArticleUrl) {
-            const elapsedTime = Math.floor((Date.now() - startTime) / 1000);
-            if (elapsedTime > 0) {
-                fetch('/track_time', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url: currentArticleUrl, time_spent: elapsedTime })
-                }).catch(err => console.error(err));
-            }
-        }
+        })
+        .catch(err => console.error('Error fetching search results:', err));
     });
 </script>
-
-<script>
-    window.addEventListener('DOMContentLoaded', () => {
-        // Initial contextual data without location or time
-        const contextualData = {
-            theme: localStorage.getItem('theme') || 'light',
-            viewport: {
-                width: window.innerWidth,
-                height: window.innerHeight
-            },
-            reading_mode: 'focus'
-        };
-
-        // Capture current time of access as an ISO string
-        contextualData.time_of_access = new Date().toISOString();
-
-        // Function to send data to the server
-        function sendContextualData() {
-            fetch('/store_context', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contextual_data: contextualData })
-            })
-            .then(response => response.json())
-            .then(data => console.log('Context stored:', data))
-            .catch(err => console.error('Error storing context:', err));
-        }
-
-        // Attempt to get user location
-        if ('geolocation' in navigator) {
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    // On success, add location data
-                    contextualData.location = {
-                        latitude: position.coords.latitude,
-                        longitude: position.coords.longitude
-                    };
-                    // Now send data after we have location
-                    sendContextualData();
-                },
-                (error) => {
-                    console.warn('Could not get location:', error);
-                    // Even if location is not available, send what we have
-                    sendContextualData();
-                }
-            );
-        } else {
-            console.warn('Geolocation not supported by this browser.');
-            // Send data without location
-            sendContextualData();
-        }
-    });
-</script>
-
-
 {% endblock %}
