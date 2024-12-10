@@ -14,7 +14,7 @@ app = Flask(__name__)
 socket = SocketIO(app)
 
 # MongoDB Atlas URI (replace with your credentials)
-app.config["MONGO_URI"] = "mongodb+srv://cyrenaburke:ygxYNsTwdrbTAXGC@cluster0.sgudd.mongodb.net/news_feed?tls=true&tlsAllowInvalidCertificates=true"
+app.config["MONGO_URI"] = "mongodb+srv://<username>:<password>@cluster0.sgudd.mongodb.net/news_feed?tls=true&tlsAllowInvalidCertificates=true"
 app.config["SECRET_KEY"] = "your-secret-key"
 
 # Initialize MongoDB client
@@ -22,7 +22,7 @@ mongo = PyMongo(app)
 CORS(app)
 
 # NewsAPI Key
-NEWS_API_KEY = 'f3a094f995904af195df8a9c9e45406e'
+NEWS_API_KEY = '<YOUR API KEY>'
 NEWS_API_URL = 'https://newsapi.org/v2/everything'
 
 # Load BERT Model and Tokenizer
