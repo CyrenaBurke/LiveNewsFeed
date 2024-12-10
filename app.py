@@ -25,6 +25,23 @@ CORS(app)
 NEWS_API_KEY = 'f3a094f995904af195df8a9c9e45406e'
 NEWS_API_URL = 'https://newsapi.org/v2/everything'
 
+# Load BERT Model and Tokenizer
+MODEL_NAME = 'bert-base-uncased'
+tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+model = AutoModel.from_pretrained(MODEL_NAME)
+
+def get_embedding(text):
+    """Get BERT embedding for a given text."""
+    inputs = tokenizer(text, return_tensors='pt', truncation=True, max_length=512, padding=True)
+    with torch.no_grad():
+        outputs = model(**inputs)
+    return outputs.last_hidden_state[:, 0, :].squeeze().numpy()
+
+def calculate_similarity(embedding1, embedding2):
+    """Calculate cosine similarity between two embeddings."""
+    return torch.nn.functional.cosine_similarity(
+        torch.tensor(embedding1), torch.tensor(embedding2), dim=0
+    ).item()
 
 # Beginning of Routes
 @app.route('/')
@@ -57,7 +74,7 @@ def home():
         news = fetch_news()
         recommendations = recommend_articles(username)
 
-        # Add like status and like count to news and recommendations as before
+        # Add like status and like count to news and recommendations
         for article in news:
             article['liked'] = username in article.get('liked_by', [])
             article['likes'] = len(article.get('liked_by', []))
@@ -69,6 +86,41 @@ def home():
         return render_template('home.html', username=username, news=news, recommendations=recommendations)
     else:
         return redirect(url_for('login'))
+
+@app.route('/summarize/<article_id>', methods=['GET'])
+def summarize_article(article_id):
+    """Summarize an article."""
+    article = mongo.db.articles.find_one({'_id': ObjectId(article_id)})
+    if not article:
+        return jsonify({'error': 'Article not found'}), 404
+
+    content = article.get('content', '')
+    embedding = get_embedding(content)
+
+    mongo.db.articles.update_one(
+        {'_id': ObjectId(article_id)},
+        {'$set': {'bert_embedding': embedding.tolist()}}
+    )
+
+    return jsonify({'summary': content[:150] + '...', 'embedding': embedding.tolist()})
+
+@app.route('/search', methods=['POST'])
+def search_articles():
+    """Search for articles using semantic similarity."""
+    query = request.json.get('query', '')
+    if not query:
+        return jsonify({'error': 'Query is required'}), 400
+
+    query_embedding = get_embedding(query)
+
+    articles = list(mongo.db.articles.find())
+    for article in articles:
+        article_embedding = article.get('bert_embedding')
+        if article_embedding:
+            article['similarity'] = calculate_similarity(query_embedding, article_embedding)
+
+    articles.sort(key=lambda x: x.get('similarity', 0), reverse=True)
+    return jsonify({'results': articles[:10]})
 
 
 @app.route('/logout')
@@ -128,6 +180,7 @@ def track_time():
 
 @app.route('/like', methods=['POST'])
 def like_article():
+    """Like or unlike an article."""
     if 'username' not in session:
         return jsonify({'error': 'Not logged in'}), 403
 
@@ -136,54 +189,33 @@ def like_article():
     if not article_url:
         return jsonify({'error': 'Invalid article URL'}), 400
 
-    # Find the user document
-    user = mongo.db.users.find_one({'username': username})
-    if not user:
-        return jsonify({'error': 'User not found'}), 404
-    user_id = user['_id']
-
-    # Find the article document by URL
     article = mongo.db.articles.find_one({'url': article_url}, {'_id': 1, 'liked_by': 1})
     if not article:
         return jsonify({'error': 'Article not found'}), 404
-    article_id = article['_id']
 
-    # Determine if user already liked the article
+    article_id = article['_id']
     liked = username in article.get('liked_by', [])
 
     if liked:
-        # User is currently liking the article, so we "unlike" it
+        # Unlike the article
         mongo.db.articles.update_one(
             {'_id': article_id},
             {'$pull': {'liked_by': username}}
         )
         new_liked_status = False
     else:
-        # User hasn't liked the article yet, so we like it
+        # Like the article
         mongo.db.articles.update_one(
             {'_id': article_id},
             {'$addToSet': {'liked_by': username}}
         )
         new_liked_status = True
 
-    # Update user_behavior for this user and article
-    mongo.db.user_behavior.update_one(
-        {'article_id': article_id, 'user_id': user_id},
-        {
-            '$setOnInsert': {
-                'article_id': article_id,
-                'user_id': user_id
-            },
-            '$set': {'liked': new_liked_status}
-        },
-        upsert=True
-    )
-
-    # Re-fetch the updated article to get the new like count
+    # Recalculate like count
     updated_article = mongo.db.articles.find_one({'_id': article_id}, {'liked_by': 1})
     like_count = len(updated_article.get('liked_by', []))
 
-    # Update the `likes` count in the article
+    # Update the like count in the database
     mongo.db.articles.update_one(
         {'_id': article_id},
         {'$set': {'likes': like_count}}
@@ -225,6 +257,7 @@ def store_context():
 
 # Function to fetch news from NewsAPI and store in MongoDB if not already stored
 def fetch_news():
+    """Fetch news articles and store them in MongoDB."""
     params = {
         'apiKey': NEWS_API_KEY,
         'q': 'news',
@@ -234,49 +267,34 @@ def fetch_news():
         'domains': 'bbc.co.uk,cnn.com,wired.com,nytimes.com'
     }
 
-    response = requests.get('https://newsapi.org/v2/everything', params=params)
-    print("NewsAPI status code:", response.status_code)
-    data = response.json()
-    print("NewsAPI response JSON:", data)
-
+    response = requests.get(NEWS_API_URL, params=params)
     if response.status_code != 200:
         print(f"Error fetching news: {response.status_code}")
         return []
 
-    articles = data.get('articles', [])
-    print("Number of articles received:", len(articles))
-
+    articles = response.json().get('articles', [])
     for article in articles:
-        print("Article URL:", article.get('url'))
         category = categorize_article(article)
-
-        # Fields from the API only (no user interaction fields set here)
-        api_fields = {
-            'title': article.get('title'),
-            'description': article.get('description'),
-            'urlToImage': article.get('urlToImage'),
-            'publishedAt': article.get('publishedAt'),
-            'content': article.get('content'),
-            'category': category
-        }
-
-        # Use $set for API fields
-        # Use $setOnInsert to only initialize interaction fields once
         mongo.db.articles.update_one(
             {'url': article['url']},
             {
-                '$set': api_fields,
+                '$set': {
+                    'title': article.get('title'),
+                    'description': article.get('description'),
+                    'urlToImage': article.get('urlToImage'),
+                    'publishedAt': article.get('publishedAt'),
+                    'content': article.get('content'),
+                    'category': category,
+                },
                 '$setOnInsert': {
+                    'bert_embedding': None,
                     'liked_by': [],
-                    'likes': 0,
-                    'time_spent': {}
+                    'likes': 0
                 }
             },
             upsert=True
         )
-
-    return list(mongo.db.articles.find())
-
+ return list(mongo.db.articles.find())
 
 def get_user_preferences(username):
     user = mongo.db.users.find_one({'username': username})
@@ -362,9 +380,6 @@ def categorize_article(article):
 scheduler = BackgroundScheduler()
 scheduler.add_job(func=fetch_and_store_news, trigger="interval", minutes=1)
 scheduler.start()
-
-if __name__ == '__main__':
-    socket.run(app, debug=False, use_reloader=False)
 
 if __name__ == '__main__':
     socket.run(app, debug=False, use_reloader=False)
